@@ -194,3 +194,69 @@ class TCMAnalyzer:
 
         except Exception as e:
             raise Exception(f"调用LLM API时出错: {str(e)}")
+
+    def chat_streaming(self, messages, age=30, gender="不方便透露"):
+        """
+        多轮对话流式输出
+
+        参数:
+            messages: 对话历史 [{"role": "user/assistant", "content": "..."}]
+            age: 年龄
+            gender: 性别
+
+        返回:
+            生成器，逐步返回AI回复
+        """
+        try:
+            # 构建系统提示词（针对多轮对话优化）
+            system_prompt = f"""你是一位经验丰富的中医养生专家，正在与用户进行多轮对话咨询。
+
+用户信息：
+- 年龄：{age}岁
+- 性别：{gender}
+
+你的职责：
+1. 耐心倾听用户的症状和问题
+2. 通过提问了解更多细节（如症状持续时间、加重缓解因素等）
+3. 从中医角度分析症状，给出辨证结果
+4. 提供实用的养生建议（饮食、起居、运动等）
+5. 回答用户的追问，解释中医理论
+
+对话原则：
+- 语言简洁友好，避免过于专业的术语
+- 根据对话上下文给出针对性回复
+- 如果信息不足，主动询问更多细节
+- 强调这是养生保健建议，不能替代医疗诊断
+- 遇到严重症状，建议就医
+
+请保持温和、专业的语气，像一位可信赖的中医师一样与用户交流。"""
+
+            # 构建完整的消息列表
+            api_messages = [{"role": "system", "content": system_prompt}]
+
+            # 添加对话历史（跳过欢迎消息）
+            for msg in messages:
+                if msg['role'] in ['user', 'assistant']:
+                    # 过滤掉欢迎消息
+                    if not (msg['role'] == 'assistant' and '我是您的中医智能小助手' in msg['content']):
+                        api_messages.append({
+                            "role": msg['role'],
+                            "content": msg['content']
+                        })
+
+            # 调用OpenAI API（流式）
+            stream = self.client.chat.completions.create(
+                model=self.model,
+                messages=api_messages,
+                temperature=0.7,
+                max_tokens=1500,
+                stream=True
+            )
+
+            # 逐步返回结果
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    yield chunk.choices[0].delta.content
+
+        except Exception as e:
+            raise Exception(f"调用LLM API时出错: {str(e)}")

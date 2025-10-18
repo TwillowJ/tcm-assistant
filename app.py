@@ -6,288 +6,306 @@ from llm_service import TCMAnalyzer
 st.set_page_config(
     page_title="中医智能小助手",
     page_icon="🏥",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# 欢迎横幅 - 简洁版
+# 初始化session state
+if 'page' not in st.session_state:
+    st.session_state.page = 'welcome'  # 'welcome' 或 'chat'
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+if 'show_welcome_message' not in st.session_state:
+    st.session_state.show_welcome_message = True
+if 'user_info' not in st.session_state:
+    st.session_state.user_info = {'age': 30, 'gender': '不方便透露'}
+
+# 自定义CSS样式
 st.markdown("""
-<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-    <h1 style="color: white; margin: 0; text-align: center; font-size: 32px;">🌿 中医智能小助手</h1>
-    <p style="color: #f0f0f0; text-align: center; margin-top: 12px; font-size: 16px; opacity: 0.95;">
-        结合传统中医智慧与现代AI技术，为您提供个性化养生建议
-    </p>
-</div>
+<style>
+    /* 隐藏默认的Streamlit元素 */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+
+    /* 聊天消息样式 */
+    .chat-message {
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .chat-message.user {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin-left: 20%;
+    }
+    .chat-message.assistant {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        color: #333;
+        margin-right: 20%;
+    }
+    .message-content {
+        margin-top: 0.5rem;
+        line-height: 1.6;
+    }
+
+    /* 快速选择按钮样式 */
+    .quick-option {
+        display: inline-block;
+        margin: 5px;
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .quick-option:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+</style>
 """, unsafe_allow_html=True)
 
-# 免责声明 - 紧凑显示
-st.warning("⚠️ **免责声明：** 本应用仅提供养生保健参考建议，不能替代专业医疗诊断和治疗。如有严重或持续症状，请及时就医咨询专业医师。")
+# ==================== 欢迎页面 ====================
+def show_welcome_page():
+    # 居中布局
+    col1, col2, col3 = st.columns([1, 2, 1])
 
-# 症状输入区域
-st.markdown("### 📝 症状描述")
+    with col2:
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
-# 使用session_state存储选中的症状
-if 'selected_symptoms' not in st.session_state:
-    st.session_state.selected_symptoms = []
+        # 应用标题和介绍
+        st.markdown("""
+        <div style="text-align: center;">
+            <h1 style="font-size: 48px; margin-bottom: 10px;">🌿 中医智能小助手</h1>
+            <p style="font-size: 20px; color: #666; margin-bottom: 30px;">
+                结合传统中医智慧与现代AI技术，为您提供个性化养生建议
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-# 精简的常见症状列表 - 只保留最常见的症状
-common_symptoms = [
-    "疲劳乏力", "失眠多梦", "入睡困难", "食欲不振", "腹胀",
-    "便秘", "腹泻", "头痛", "头晕", "焦虑",
-    "心烦", "腰痛", "关节痛", "胸闷", "心悸",
-    "怕冷", "怕热", "出汗异常", "口干"
-]
+        st.markdown("<br>", unsafe_allow_html=True)
 
-# 常见症状快速选择 - 无标题，直接显示
-with st.container():
-    # 创建紧凑的可选择症状标签
-    cols = st.columns(5)
-    for idx, symptom in enumerate(common_symptoms):
-        col_idx = idx % 5
-        with cols[col_idx]:
-            # 判断是否已选中
-            is_selected = symptom in st.session_state.selected_symptoms
-            button_type = "primary" if is_selected else "secondary"
+        # 功能特色
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 30px;
+                    border-radius: 15px;
+                    color: white;
+                    margin-bottom: 30px;">
+            <h3 style="text-align: center; margin-bottom: 20px;">✨ 应用特色</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>🤖 <strong>AI智能分析</strong><br/>GPT-4o-mini驱动的专业分析</div>
+                <div>🎯 <strong>精准辨证</strong><br/>多维度综合评估</div>
+                <div>💊 <strong>实用建议</strong><br/>可落地的养生方案</div>
+                <div>🔒 <strong>隐私保护</strong><br/>数据不留存</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-            if st.button(
-                f"{'✓ ' if is_selected else ''}{symptom}",
-                key=f"symptom_{symptom}",
-                use_container_width=True,
-                type=button_type
-            ):
-                # 切换选中状态
-                if symptom in st.session_state.selected_symptoms:
-                    st.session_state.selected_symptoms.remove(symptom)
-                else:
-                    st.session_state.selected_symptoms.append(symptom)
+        # 免责声明
+        st.markdown("""
+        <div style="background: #fff3cd;
+                    border-left: 4px solid #ffc107;
+                    padding: 20px;
+                    border-radius: 10px;
+                    margin-bottom: 30px;">
+            <h4 style="color: #856404; margin-top: 0;">⚠️ 免责声明</h4>
+            <p style="color: #856404; margin-bottom: 0; line-height: 1.6;">
+                本应用仅提供养生保健参考建议，不能替代专业医疗诊断和治疗。
+                建议仅为养生保健参考，不涉及具体药物治疗。
+                如有严重或持续性症状，请及时就医咨询专业医师。
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # 进入问诊按钮
+        col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
+        with col_btn2:
+            if st.button("🩺 进入问诊", type="primary", use_container_width=True, key="enter_chat"):
+                st.session_state.page = 'chat'
+                st.session_state.show_welcome_message = True
                 st.rerun()
 
-# 显示已选症状（如果有）
-if st.session_state.selected_symptoms:
-    st.markdown("<br>", unsafe_allow_html=True)
-    selected_html = " ".join([
-        f'<span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); '
-        f'color: white; padding: 5px 12px; border-radius: 15px; margin: 3px; '
-        f'display: inline-block; font-size: 14px;">{s}</span>'
-        for s in st.session_state.selected_symptoms
-    ])
-    st.markdown(f'<div style="margin-bottom: 10px;">已选症状：{selected_html}</div>', unsafe_allow_html=True)
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
-# 大文本输入框 - 不再自动填充选中的症状
-st.markdown("<br>", unsafe_allow_html=True)
-additional_symptoms = st.text_area(
-    "补充详细症状描述（可选）",
-    value="",
-    placeholder="可以在此输入更详细的症状描述...\n例如：疲劳症状主要出现在下午，晚上入睡需要1小时以上，睡眠中容易醒来...",
-    height=180,
-    help="症状描述越详细，AI分析越准确。可以只选择上方症状，或只输入文本，或两者结合。",
-    key="additional_symptoms"
-)
+        # 页脚
+        st.markdown("""
+        <div style="text-align: center; color: #999; font-size: 14px;">
+            © 2025 中医智能小助手 v2.0 | Powered by Streamlit & AI
+        </div>
+        """, unsafe_allow_html=True)
 
-# 添加一些可选的补充信息
-st.markdown("#### 补充信息（可选）")
+# ==================== 对话页面 ====================
+def show_chat_page():
+    # 顶部导航栏
+    col1, col2, col3 = st.columns([1, 6, 1])
+    with col1:
+        if st.button("← 返回首页", key="back_to_welcome"):
+            st.session_state.page = 'welcome'
+            st.rerun()
+    with col2:
+        st.markdown("""
+        <div style="text-align: center; padding: 10px;">
+            <h3 style="margin: 0; color: #667eea;">🌿 中医智能小助手</h3>
+        </div>
+        """, unsafe_allow_html=True)
+    with col3:
+        if st.button("🔄 新对话", key="new_chat"):
+            st.session_state.chat_history = []
+            st.session_state.show_welcome_message = True
+            st.rerun()
 
-col1, col2, col3 = st.columns(3)
+    st.markdown("---")
 
-with col1:
-    age = st.number_input("年龄", min_value=1, max_value=120, value=30)
+    # 显示AI欢迎消息（仅首次进入时）
+    if st.session_state.show_welcome_message:
+        st.session_state.show_welcome_message = False
 
-with col2:
-    gender = st.selectbox("性别", ["男", "女", "不方便透露"])
+        # AI欢迎消息
+        welcome_msg = {
+            'role': 'assistant',
+            'content': """您好！我是您的中医智能小助手 🌿
 
-with col3:
-    duration = st.selectbox(
-        "症状持续时间",
-        ["1-3天", "1周左右", "2-4周", "1-3个月", "3个月以上"]
-    )
+我可以帮您：
+- 从中医角度分析身体症状
+- 提供个性化养生建议
+- 解答中医养生相关问题
 
-st.markdown("---")
+请告诉我您的症状或健康问题，也可以点击下方常见症状快速咨询："""
+        }
+        st.session_state.chat_history.append(welcome_msg)
 
-# 分析按钮
-analyze_button = st.button("🔍 开始分析", type="primary", use_container_width=True)
-
-# 结果展示区域
-if analyze_button:
-    # 合并选中的症状和文本框输入
-    combined_symptoms = ""
-    if st.session_state.selected_symptoms:
-        combined_symptoms = "、".join(st.session_state.selected_symptoms)
-    if additional_symptoms.strip():
-        if combined_symptoms:
-            combined_symptoms += "。" + additional_symptoms.strip()
-        else:
-            combined_symptoms = additional_symptoms.strip()
-
-    if not combined_symptoms:
-        st.error("❌ 请至少选择一个症状或输入症状描述")
-    else:
-        try:
-            # 初始化分析器
-            analyzer = TCMAnalyzer()
-
-            # 显示加载状态并调用LLM API
-            with st.spinner("🤖 AI正在分析您的症状，请稍候..."):
-                # 使用流式输出获得更好的用户体验
-                full_response = ""
-
-                # 流式获取分析结果
-                for chunk in analyzer.analyze_streaming(
-                    symptoms=combined_symptoms,
-                    age=int(age),
-                    gender=gender,
-                    duration=duration
-                ):
-                    full_response += chunk
-
-            # 分块显示结果 - 美化输出
-            # 分离中医辨证分析和养生建议
-            sections = full_response.split("## 二、个性化养生建议")
-
-            if len(sections) >= 2:
-                # 第一部分：中医辨证分析
-                st.markdown("""
-                <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-                            padding: 20px;
-                            border-radius: 10px;
-                            margin: 20px 0;">
-                    <h3 style="color: white; margin: 0;">🔍 中医辨证分析</h3>
+    # 显示对话历史
+    chat_container = st.container()
+    with chat_container:
+        for idx, message in enumerate(st.session_state.chat_history):
+            if message['role'] == 'user':
+                st.markdown(f"""
+                <div class="chat-message user">
+                    <div style="font-weight: bold;">👤 您</div>
+                    <div class="message-content">{message['content']}</div>
                 </div>
                 """, unsafe_allow_html=True)
-                st.markdown(sections[0].replace("## 一、中医辨证分析", ""))
-
-                # 第二部分：个性化养生建议
-                remaining = sections[1].split("## 三、重要提醒")
-                st.markdown("""
-                <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-                            padding: 20px;
-                            border-radius: 10px;
-                            margin: 20px 0;">
-                    <h3 style="color: white; margin: 0;">💊 个性化养生建议</h3>
-                </div>
-                """, unsafe_allow_html=True)
-                st.markdown(remaining[0])
-
-                # 第三部分：重要提醒
-                if len(remaining) >= 2:
-                    st.markdown("""
-                    <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-                                padding: 20px;
-                                border-radius: 10px;
-                                margin: 20px 0;">
-                        <h3 style="color: white; margin: 0;">⚠️ 重要提醒</h3>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    st.markdown(remaining[1])
             else:
-                # 如果分段失败，直接显示全部内容
-                st.markdown(full_response)
+                st.markdown(f"""
+                <div class="chat-message assistant">
+                    <div style="font-weight: bold;">🌿 中医小助手</div>
+                    <div class="message-content">{message['content']}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-            # 添加分隔线
-            st.markdown("---")
+                # 在第一条AI消息后显示常见症状快速选择
+                if idx == 0:
+                    show_quick_symptoms()
 
-            # 提示信息
-            st.info("💡 **温馨提示：** 以上建议仅供参考，具体情况请咨询专业中医师。")
+    # 底部输入框
+    st.markdown("<br>", unsafe_allow_html=True)
 
-        except Exception as e:
-            st.error(f"❌ 分析过程中出现错误：{str(e)}")
-            st.info("💡 请检查：\n1. 是否已配置OPENAI_API_KEY\n2. API密钥是否有效\n3. 网络连接是否正常")
+    # 用户信息（可折叠）
+    with st.expander("📋 个人信息（可选）", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            age = st.number_input("年龄", min_value=1, max_value=120,
+                                 value=st.session_state.user_info['age'],
+                                 key="user_age")
+            st.session_state.user_info['age'] = age
+        with col2:
+            gender = st.selectbox("性别", ["男", "女", "不方便透露"],
+                                 index=["男", "女", "不方便透露"].index(st.session_state.user_info['gender']),
+                                 key="user_gender")
+            st.session_state.user_info['gender'] = gender
 
-# 侧边栏
-with st.sidebar:
-    # 应用信息卡片
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                padding: 20px;
-                border-radius: 10px;
-                margin-bottom: 20px;">
-        <h3 style="color: white; margin: 0;">🏥 中医智能小助手</h3>
-        <p style="color: #f0f0f0; font-size: 14px; margin: 10px 0 0 0;">v1.3 · 界面优化版</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # 输入框和发送按钮
+    col_input, col_send = st.columns([5, 1])
+    with col_input:
+        user_input = st.text_input("请输入您的症状或问题...",
+                                   key="user_input",
+                                   label_visibility="collapsed",
+                                   placeholder="请详细描述您的症状...")
+    with col_send:
+        send_button = st.button("发送 📤", type="primary", use_container_width=True)
 
-    st.markdown("### 📊 应用特色")
-    st.markdown("""
-    - ✨ **AI智能分析**：GPT-4驱动
-    - 🎯 **精准辨证**：多维度综合评估
-    - 💊 **实用建议**：可落地的养生方案
-    - 🔒 **隐私保护**：数据不留存
-    """)
+    # 处理用户输入
+    if send_button and user_input.strip():
+        handle_user_input(user_input)
 
-    st.markdown("---")
+# 显示常见症状快速选择
+def show_quick_symptoms():
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown("### ❓ 常见问题")
-    with st.expander("如何获得更准确的建议？"):
-        st.write("""
-        **提供详细信息：**
-        - 症状的具体表现
-        - 发生的时间和频率
-        - 伴随的其他症状
-        - 加重或缓解的因素
-
-        **使用快速选择：**
-        - 点击症状标签快速添加
-        - 可多选组合症状
-        - 在文本框中补充细节
-        """)
-
-    with st.expander("建议的可信度如何？"):
-        st.write("""
-        本应用基于：
-        - GPT-4o-mini大语言模型
-        - 中医经典理论体系
-        - 现代医学常识校验
-
-        ⚠️ 注意：
-        - 仅供养生保健参考
-        - 不能替代专业诊断
-        - 重症请及时就医
-        """)
-
-    with st.expander("我的数据安全吗？"):
-        st.write("""
-        **隐私保护承诺：**
-        - ✓ 数据仅用于生成建议
-        - ✓ 不进行永久存储
-        - ✓ 不与第三方共享
-        - ✓ 符合数据保护法规
-        """)
-
-    with st.expander("什么时候应该就医？"):
-        st.write("""
-        **立即就医的情况：**
-        - 🚨 急性剧烈疼痛
-        - 🚨 持续高热不退
-        - 🚨 呼吸困难
-        - 🚨 意识模糊
-        - 🚨 大量出血
-        - 🚨 症状急剧恶化
-
-        **及时就医的情况：**
-        - ⚠️ 症状持续超过2周
-        - ⚠️ 症状反复发作
-        - ⚠️ 影响正常生活
-        - ⚠️ 有基础疾病
-        """)
-
-    st.markdown("---")
-
-    st.markdown("### 💡 养生小贴士")
-    tips = [
-        "🌅 早睡早起，顺应自然",
-        "🥗 饮食有节，营养均衡",
-        "🧘 适度运动，量力而行",
-        "😊 心态平和，情志舒畅",
-        "💧 多喝温水，促进代谢"
+    common_issues = [
+        "疲劳乏力、精神不振",
+        "失眠多梦、睡眠质量差",
+        "消化不良、胃胀腹胀",
+        "头痛头晕",
+        "焦虑心烦、情绪低落",
+        "腰酸背痛、关节疼痛"
     ]
-    import random
-    st.info(random.choice(tips))
 
-# 页脚
-st.markdown("---")
-st.markdown(
-    "<div style='text-align: center; color: gray;'>© 2025 中医智能小助手 | Powered by Streamlit & AI</div>",
-    unsafe_allow_html=True
-)
+    cols = st.columns(3)
+    for idx, issue in enumerate(common_issues):
+        col_idx = idx % 3
+        with cols[col_idx]:
+            if st.button(issue, key=f"quick_{idx}", use_container_width=True):
+                handle_user_input(issue)
+
+# 处理用户输入
+def handle_user_input(user_input):
+    # 添加用户消息到历史
+    st.session_state.chat_history.append({
+        'role': 'user',
+        'content': user_input
+    })
+
+    # 调用AI获取回复
+    try:
+        analyzer = TCMAnalyzer()
+
+        # 构建对话上下文
+        messages = []
+        for msg in st.session_state.chat_history[-5:]:  # 只保留最近5轮对话作为上下文
+            messages.append({
+                'role': msg['role'],
+                'content': msg['content']
+            })
+
+        # 获取AI回复（使用流式输出）
+        with st.spinner("🤔 正在思考..."):
+            full_response = ""
+            for chunk in analyzer.chat_streaming(
+                messages=messages,
+                age=st.session_state.user_info['age'],
+                gender=st.session_state.user_info['gender']
+            ):
+                full_response += chunk
+
+        # 添加AI回复到历史
+        st.session_state.chat_history.append({
+            'role': 'assistant',
+            'content': full_response
+        })
+
+    except Exception as e:
+        st.session_state.chat_history.append({
+            'role': 'assistant',
+            'content': f"抱歉，分析过程中出现错误：{str(e)}\n\n请检查网络连接或稍后重试。"
+        })
+
+    st.rerun()
+
+# ==================== 主程序 ====================
+def main():
+    if st.session_state.page == 'welcome':
+        show_welcome_page()
+    else:
+        show_chat_page()
+
+if __name__ == "__main__":
+    main()
