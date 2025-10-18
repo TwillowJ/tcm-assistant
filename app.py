@@ -9,82 +9,29 @@ st.set_page_config(
     layout="wide"
 )
 
-# 主标题
-st.title("🏥 中医智能小助手")
-st.markdown("---")
-
-# 欢迎横幅
+# 欢迎横幅 - 简洁版
 st.markdown("""
 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 30px;
+            padding: 40px 30px;
             border-radius: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <h2 style="color: white; margin: 0; text-align: center;">🌿 欢迎使用中医智能小助手</h2>
-    <p style="color: #f0f0f0; text-align: center; margin-top: 10px; font-size: 16px;">
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+    <h1 style="color: white; margin: 0; text-align: center; font-size: 32px;">🌿 中医智能小助手</h1>
+    <p style="color: #f0f0f0; text-align: center; margin-top: 12px; font-size: 16px; opacity: 0.95;">
         结合传统中医智慧与现代AI技术，为您提供个性化养生建议
     </p>
 </div>
 """, unsafe_allow_html=True)
 
-# 功能卡片
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown("""
-    <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
-        <div style="font-size: 40px; margin-bottom: 10px;">🔍</div>
-        <h4 style="margin: 0;">智能分析</h4>
-        <p style="color: #666; font-size: 14px;">AI辨证施治</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col2:
-    st.markdown("""
-    <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
-        <div style="font-size: 40px; margin-bottom: 10px;">💊</div>
-        <h4 style="margin: 0;">个性方案</h4>
-        <p style="color: #666; font-size: 14px;">定制养生建议</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col3:
-    st.markdown("""
-    <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
-        <div style="font-size: 40px; margin-bottom: 10px;">🌱</div>
-        <h4 style="margin: 0;">科学养生</h4>
-        <p style="color: #666; font-size: 14px;">中西医结合</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# 使用提示
-with st.expander("📖 使用指南", expanded=False):
-    st.markdown("""
-    **如何使用本应用：**
-    1. 📝 选择或输入您的症状描述（越详细越好）
-    2. 👤 填写基本信息（年龄、性别、持续时间）
-    3. 🔍 点击"开始分析"按钮
-    4. ⏱️ 等待AI分析（通常10-30秒）
-    5. 📋 查看个性化的养生建议
-
-    **温馨提示：**
-    - 症状描述越详细，分析越准确
-    - 可以使用快速选择功能快速添加症状
-    - 建议定期评估调整养生方案
-
-    ⚠️ **免责声明：** 本应用仅提供养生保健参考建议，不能替代专业医疗诊断和治疗。如有严重或持续症状，请及时就医咨询专业医师。
-    """)
-
-st.markdown("---")
+# 免责声明 - 紧凑显示
+st.warning("⚠️ **免责声明：** 本应用仅提供养生保健参考建议，不能替代专业医疗诊断和治疗。如有严重或持续症状，请及时就医咨询专业医师。")
 
 # 症状输入区域
-st.subheader("📝 请描述您的症状")
+st.markdown("### 📝 症状描述")
 
-# 常见症状快速选择
-st.markdown("#### 💡 常见症状快速选择")
-st.caption("点击下方标签快速添加症状，或直接在文本框中输入")
+# 使用session_state存储选中的症状
+if 'selected_symptoms' not in st.session_state:
+    st.session_state.selected_symptoms = []
 
 # 定义常见症状分类
 symptom_categories = {
@@ -94,47 +41,44 @@ symptom_categories = {
     "头部症状": ["头痛", "头晕", "头重", "耳鸣"],
     "情绪相关": ["易怒", "焦虑", "抑郁", "心烦", "情绪低落"],
     "疼痛不适": ["腰痛", "关节痛", "肌肉酸痛", "胸闷", "心悸"],
-    "其他症状": ["怕冷", "怕热", "出汗异常", "口干", "口苦", "咽干"],
+    "其他": ["怕冷", "怕热", "出汗异常", "口干", "口苦", "咽干"],
 }
 
-# 使用session_state存储选中的症状
-if 'selected_symptoms' not in st.session_state:
-    st.session_state.selected_symptoms = []
+# 常见症状快速选择 - 紧凑小块布局
+with st.container():
+    st.caption("💡 常见症状快速选择（点击添加到下方输入框）")
 
-# 创建症状选择界面
-cols_per_row = 4
-for category, symptoms_list in symptom_categories.items():
-    with st.expander(f"🔹 {category}", expanded=False):
-        cols = st.columns(cols_per_row)
-        for idx, symptom in enumerate(symptoms_list):
-            col_idx = idx % cols_per_row
-            with cols[col_idx]:
-                if st.button(symptom, key=f"symptom_{category}_{symptom}", use_container_width=True):
-                    if symptom not in st.session_state.selected_symptoms:
-                        st.session_state.selected_symptoms.append(symptom)
+    # 所有症状平铺显示
+    all_symptoms = []
+    for symptoms_list in symptom_categories.values():
+        all_symptoms.extend(symptoms_list)
 
-# 显示已选症状
+    # 创建紧凑的按钮布局
+    cols = st.columns(6)
+    for idx, symptom in enumerate(all_symptoms):
+        col_idx = idx % 6
+        with cols[col_idx]:
+            if st.button(symptom, key=f"symptom_{symptom}", use_container_width=True):
+                if symptom not in st.session_state.selected_symptoms:
+                    st.session_state.selected_symptoms.append(symptom)
+                    st.rerun()
+
+# 大文本输入框
+st.markdown("<br>", unsafe_allow_html=True)
+default_symptoms = "、".join(st.session_state.selected_symptoms) if st.session_state.selected_symptoms else ""
+symptoms = st.text_area(
+    "请输入或补充您的症状",
+    value=default_symptoms,
+    placeholder="点击上方症状快速添加，或在此处直接输入详细症状描述...\n例如：最近经常感到疲劳，容易出汗，晚上睡眠质量不好，偶尔会有头晕...",
+    height=250,
+    help="症状描述越详细，AI分析越准确。支持多轮对话。"
+)
+
+# 清空按钮（仅在有选中症状时显示）
 if st.session_state.selected_symptoms:
-    st.markdown("**已选症状：**")
-    selected_text = "、".join(st.session_state.selected_symptoms)
-    st.info(f"📌 {selected_text}")
-
     if st.button("🗑️ 清空已选症状", key="clear_symptoms"):
         st.session_state.selected_symptoms = []
         st.rerun()
-
-st.markdown("---")
-
-# 使用文本区域让用户输入症状
-# 自动填充已选症状
-default_symptoms = "、".join(st.session_state.selected_symptoms) if st.session_state.selected_symptoms else ""
-symptoms = st.text_area(
-    "症状描述（可在快速选择的基础上补充详细信息）",
-    value=default_symptoms,
-    placeholder="例如：最近经常感到疲劳，容易出汗，晚上睡眠质量不好，偶尔会有头晕...",
-    height=150,
-    help="请尽可能详细地描述您的症状，包括持续时间、发生频率、伴随症状等"
-)
 
 # 添加一些可选的补充信息
 st.markdown("#### 补充信息（可选）")
