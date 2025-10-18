@@ -33,52 +33,59 @@ st.markdown("### 📝 症状描述")
 if 'selected_symptoms' not in st.session_state:
     st.session_state.selected_symptoms = []
 
-# 定义常见症状分类
-symptom_categories = {
-    "疲劳乏力": ["容易疲劳", "精神不振", "四肢无力", "气短懒言"],
-    "睡眠问题": ["失眠多梦", "入睡困难", "早醒", "睡眠质量差", "嗜睡"],
-    "消化系统": ["食欲不振", "腹胀", "便秘", "腹泻", "恶心", "胃痛"],
-    "头部症状": ["头痛", "头晕", "头重", "耳鸣"],
-    "情绪相关": ["易怒", "焦虑", "抑郁", "心烦", "情绪低落"],
-    "疼痛不适": ["腰痛", "关节痛", "肌肉酸痛", "胸闷", "心悸"],
-    "其他": ["怕冷", "怕热", "出汗异常", "口干", "口苦", "咽干"],
-}
+# 精简的常见症状列表 - 只保留最常见的症状
+common_symptoms = [
+    "疲劳乏力", "失眠多梦", "入睡困难", "食欲不振", "腹胀",
+    "便秘", "腹泻", "头痛", "头晕", "焦虑",
+    "心烦", "腰痛", "关节痛", "胸闷", "心悸",
+    "怕冷", "怕热", "出汗异常", "口干"
+]
 
-# 常见症状快速选择 - 紧凑小块布局
+# 常见症状快速选择 - 无标题，直接显示
 with st.container():
-    st.caption("💡 常见症状快速选择（点击添加到下方输入框）")
-
-    # 所有症状平铺显示
-    all_symptoms = []
-    for symptoms_list in symptom_categories.values():
-        all_symptoms.extend(symptoms_list)
-
-    # 创建紧凑的按钮布局
-    cols = st.columns(6)
-    for idx, symptom in enumerate(all_symptoms):
-        col_idx = idx % 6
+    # 创建紧凑的可选择症状标签
+    cols = st.columns(5)
+    for idx, symptom in enumerate(common_symptoms):
+        col_idx = idx % 5
         with cols[col_idx]:
-            if st.button(symptom, key=f"symptom_{symptom}", use_container_width=True):
-                if symptom not in st.session_state.selected_symptoms:
+            # 判断是否已选中
+            is_selected = symptom in st.session_state.selected_symptoms
+            button_type = "primary" if is_selected else "secondary"
+
+            if st.button(
+                f"{'✓ ' if is_selected else ''}{symptom}",
+                key=f"symptom_{symptom}",
+                use_container_width=True,
+                type=button_type
+            ):
+                # 切换选中状态
+                if symptom in st.session_state.selected_symptoms:
+                    st.session_state.selected_symptoms.remove(symptom)
+                else:
                     st.session_state.selected_symptoms.append(symptom)
-                    st.rerun()
+                st.rerun()
 
-# 大文本输入框
-st.markdown("<br>", unsafe_allow_html=True)
-default_symptoms = "、".join(st.session_state.selected_symptoms) if st.session_state.selected_symptoms else ""
-symptoms = st.text_area(
-    "请输入或补充您的症状",
-    value=default_symptoms,
-    placeholder="点击上方症状快速添加，或在此处直接输入详细症状描述...\n例如：最近经常感到疲劳，容易出汗，晚上睡眠质量不好，偶尔会有头晕...",
-    height=250,
-    help="症状描述越详细，AI分析越准确。支持多轮对话。"
-)
-
-# 清空按钮（仅在有选中症状时显示）
+# 显示已选症状（如果有）
 if st.session_state.selected_symptoms:
-    if st.button("🗑️ 清空已选症状", key="clear_symptoms"):
-        st.session_state.selected_symptoms = []
-        st.rerun()
+    st.markdown("<br>", unsafe_allow_html=True)
+    selected_html = " ".join([
+        f'<span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); '
+        f'color: white; padding: 5px 12px; border-radius: 15px; margin: 3px; '
+        f'display: inline-block; font-size: 14px;">{s}</span>'
+        for s in st.session_state.selected_symptoms
+    ])
+    st.markdown(f'<div style="margin-bottom: 10px;">已选症状：{selected_html}</div>', unsafe_allow_html=True)
+
+# 大文本输入框 - 不再自动填充选中的症状
+st.markdown("<br>", unsafe_allow_html=True)
+additional_symptoms = st.text_area(
+    "补充详细症状描述（可选）",
+    value="",
+    placeholder="可以在此输入更详细的症状描述...\n例如：疲劳症状主要出现在下午，晚上入睡需要1小时以上，睡眠中容易醒来...",
+    height=180,
+    help="症状描述越详细，AI分析越准确。可以只选择上方症状，或只输入文本，或两者结合。",
+    key="additional_symptoms"
+)
 
 # 添加一些可选的补充信息
 st.markdown("#### 补充信息（可选）")
@@ -104,8 +111,18 @@ analyze_button = st.button("🔍 开始分析", type="primary", use_container_wi
 
 # 结果展示区域
 if analyze_button:
-    if not symptoms.strip():
-        st.error("❌ 请先输入症状描述")
+    # 合并选中的症状和文本框输入
+    combined_symptoms = ""
+    if st.session_state.selected_symptoms:
+        combined_symptoms = "、".join(st.session_state.selected_symptoms)
+    if additional_symptoms.strip():
+        if combined_symptoms:
+            combined_symptoms += "。" + additional_symptoms.strip()
+        else:
+            combined_symptoms = additional_symptoms.strip()
+
+    if not combined_symptoms:
+        st.error("❌ 请至少选择一个症状或输入症状描述")
     else:
         try:
             # 初始化分析器
@@ -114,20 +131,59 @@ if analyze_button:
             # 显示加载状态并调用LLM API
             with st.spinner("🤖 AI正在分析您的症状，请稍候..."):
                 # 使用流式输出获得更好的用户体验
-                result_placeholder = st.empty()
                 full_response = ""
 
                 # 流式获取分析结果
                 for chunk in analyzer.analyze_streaming(
-                    symptoms=symptoms,
+                    symptoms=combined_symptoms,
                     age=int(age),
                     gender=gender,
                     duration=duration
                 ):
                     full_response += chunk
-                    result_placeholder.markdown(full_response)
 
-            st.success("✅ 分析完成！")
+            # 分块显示结果 - 美化输出
+            # 分离中医辨证分析和养生建议
+            sections = full_response.split("## 二、个性化养生建议")
+
+            if len(sections) >= 2:
+                # 第一部分：中医辨证分析
+                st.markdown("""
+                <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                            padding: 20px;
+                            border-radius: 10px;
+                            margin: 20px 0;">
+                    <h3 style="color: white; margin: 0;">🔍 中医辨证分析</h3>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown(sections[0].replace("## 一、中医辨证分析", ""))
+
+                # 第二部分：个性化养生建议
+                remaining = sections[1].split("## 三、重要提醒")
+                st.markdown("""
+                <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                            padding: 20px;
+                            border-radius: 10px;
+                            margin: 20px 0;">
+                    <h3 style="color: white; margin: 0;">💊 个性化养生建议</h3>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown(remaining[0])
+
+                # 第三部分：重要提醒
+                if len(remaining) >= 2:
+                    st.markdown("""
+                    <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+                                padding: 20px;
+                                border-radius: 10px;
+                                margin: 20px 0;">
+                        <h3 style="color: white; margin: 0;">⚠️ 重要提醒</h3>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown(remaining[1])
+            else:
+                # 如果分段失败，直接显示全部内容
+                st.markdown(full_response)
 
             # 添加分隔线
             st.markdown("---")
@@ -148,7 +204,7 @@ with st.sidebar:
                 border-radius: 10px;
                 margin-bottom: 20px;">
         <h3 style="color: white; margin: 0;">🏥 中医智能小助手</h3>
-        <p style="color: #f0f0f0; font-size: 14px; margin: 10px 0 0 0;">v1.1 · 优化版</p>
+        <p style="color: #f0f0f0; font-size: 14px; margin: 10px 0 0 0;">v1.3 · 界面优化版</p>
     </div>
     """, unsafe_allow_html=True)
 
