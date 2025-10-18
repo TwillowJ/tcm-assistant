@@ -19,87 +19,24 @@ if 'chat_history' not in st.session_state:
 if 'show_welcome_message' not in st.session_state:
     st.session_state.show_welcome_message = True
 if 'user_info' not in st.session_state:
-    st.session_state.user_info = {'age': 30, 'gender': '不方便透露'}
-if 'current_response' not in st.session_state:
-    st.session_state.current_response = ""
-if 'is_generating' not in st.session_state:
-    st.session_state.is_generating = False
+    st.session_state.user_info = {'age': None, 'gender': '不方便透露'}
 
 # 自定义CSS样式
 st.markdown("""
 <style>
-    /* 隐藏默认元素 */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* 移除顶部空白 */
     .block-container {
         padding-top: 1rem;
         padding-bottom: 0rem;
-    }
-
-    /* 固定高度的聊天容器 */
-    .chat-container {
-        height: 60vh;
-        overflow-y: auto;
-        padding: 20px;
-        margin-bottom: 20px;
-        border: 1px solid #e0e0e0;
-        border-radius: 10px;
-        background: #fafafa;
-    }
-
-    /* 聊天消息样式 */
-    .chat-message {
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-        display: flex;
-        flex-direction: column;
-        animation: fadeIn 0.3s ease-in;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .chat-message.user {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        margin-left: 15%;
-    }
-
-    .chat-message.assistant {
-        background: white;
-        color: #333;
-        margin-right: 15%;
-        border: 1px solid #e0e0e0;
-    }
-
-    .message-content {
-        margin-top: 0.5rem;
-        line-height: 1.6;
-        white-space: pre-wrap;
-    }
-
-    /* 打字机效果 */
-    .typing-indicator {
-        display: inline-block;
-        animation: blink 1.4s infinite;
-    }
-
-    @keyframes blink {
-        0%, 100% { opacity: 0; }
-        50% { opacity: 1; }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==================== 欢迎页面 ====================
 def show_welcome_page():
-    # 标题
     st.markdown("""
     <div style="text-align: center; margin-top: 10vh;">
         <h1 style="font-size: 42px; margin-bottom: 15px;">🌿 中医智能小助手</h1>
@@ -109,23 +46,20 @@ def show_welcome_page():
     </div>
     """, unsafe_allow_html=True)
 
-    # 功能特色 - 紧凑版
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("🤖 **AI智能分析**")
-        st.markdown("💊 **实用养生建议**")
-    with col2:
-        st.markdown("🎯 **精准辨证**")
-        st.markdown("🔒 **隐私保护**")
+    # 功能特色 - 居中显示
+    st.markdown("""
+    <div style="text-align: center; margin: 30px 0;">
+        <div style="display: inline-block; text-align: left;">
+            <p>🤖 <strong>AI智能分析</strong> &nbsp;&nbsp;&nbsp; 🎯 <strong>精准辨证</strong></p>
+            <p>💊 <strong>实用养生建议</strong> &nbsp;&nbsp;&nbsp; 🔒 <strong>隐私保护</strong></p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-
-    # 免责声明 - 精简版
     st.info("⚠️ **免责声明**：本产品仅为 AI 技术演示，内容仅供参考，不能替代专业医疗诊断。")
-
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # 进入问诊按钮
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
         if st.button("🩺 进入问诊", type="primary", use_container_width=True, key="enter_chat"):
@@ -133,10 +67,9 @@ def show_welcome_page():
             st.session_state.show_welcome_message = True
             st.rerun()
 
-    # 页脚
     st.markdown("""
     <div style="text-align: center; color: #999; font-size: 14px; margin-top: 40px;">
-        © 2025 中医智能小助手 v1.4 | Powered by AI
+        © 2025 中医智能小助手 v1.5 | Powered by AI
     </div>
     """, unsafe_allow_html=True)
 
@@ -146,8 +79,7 @@ def show_chat_page():
     col1, col2, col3 = st.columns([1, 3, 1])
     with col1:
         if st.button("← 返回", key="back_btn"):
-            # 确认对话
-            if len(st.session_state.chat_history) > 1:  # 除了欢迎消息外还有其他消息
+            if len(st.session_state.chat_history) > 1:
                 st.session_state.page = 'confirm_exit'
                 st.rerun()
             else:
@@ -169,178 +101,137 @@ def show_chat_page():
         st.session_state.show_welcome_message = False
         welcome_msg = {
             'role': 'assistant',
-            'content': """您好！我是您的中医智能小助手 🌿
-
-我可以帮您：
-- 从中医角度分析身体症状
-- 提供个性化养生建议
-- 解答中医养生相关问题
-
-请告诉我您的症状或健康问题，也可以点击下方常见症状快速咨询："""
+            'content': "您好！我是您的中医智能小助手 🌿\n\n我可以帮您从中医角度分析身体症状，提供个性化养生建议。\n\n请告诉我您的症状或健康问题："
         }
         st.session_state.chat_history.append(welcome_msg)
 
-    # 对话历史容器（固定高度，可滚动）
-    chat_html = '<div class="chat-container">'
+    # 对话历史容器
+    chat_container = st.container(height=500)
 
-    for idx, message in enumerate(st.session_state.chat_history):
-        if message['role'] == 'user':
-            chat_html += f'''
-            <div class="chat-message user">
-                <div style="font-weight: bold;">👤 您</div>
-                <div class="message-content">{message['content']}</div>
-            </div>
-            '''
-        else:
-            chat_html += f'''
-            <div class="chat-message assistant">
-                <div style="font-weight: bold;">🌿 中医小助手</div>
-                <div class="message-content">{message['content']}</div>
-            </div>
-            '''
+    with chat_container:
+        for idx, message in enumerate(st.session_state.chat_history):
+            with st.chat_message(message['role'], avatar="🌿" if message['role'] == 'assistant' else "👤"):
+                # 如果是最后一条消息且内容为"正在分析中..."，在此处进行流式输出
+                if idx == len(st.session_state.chat_history) - 1 and message['content'] == "正在分析中...":
+                    # 在聊天框内直接进行流式输出
+                    full_response = get_ai_response_streaming()
+                    # 更新chat_history
+                    st.session_state.chat_history[-1] = {
+                        'role': 'assistant',
+                        'content': full_response
+                    }
+                else:
+                    st.markdown(message['content'])
 
-            # 在第一条消息后显示快速选择
-            if idx == 0:
-                chat_html += '</div>'
-                st.markdown(chat_html, unsafe_allow_html=True)
-                show_quick_symptoms()
-                chat_html = '<div class="chat-container">'
-
-    # 如果正在生成回复，显示当前进度
-    if st.session_state.is_generating and st.session_state.current_response:
-        chat_html += f'''
-        <div class="chat-message assistant">
-            <div style="font-weight: bold;">🌿 中医小助手</div>
-            <div class="message-content">{st.session_state.current_response}<span class="typing-indicator">▊</span></div>
-        </div>
-        '''
-
-    chat_html += '</div>'
-    st.markdown(chat_html, unsafe_allow_html=True)
-
-    # 用户信息（折叠）
+    # 用户信息（折叠）- 放在快速选择之前避免UI重复
     with st.expander("📋 个人信息（可选）", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
-            age = st.number_input("年龄", min_value=1, max_value=120,
-                                 value=st.session_state.user_info['age'],
-                                 key="user_age")
-            st.session_state.user_info['age'] = age
+            age_input = st.number_input(
+                "年龄",
+                min_value=1,
+                max_value=120,
+                value=st.session_state.user_info['age'] if st.session_state.user_info['age'] else 30,
+                key="user_age"
+            )
+            # 只有用户主动修改才更新
+            if age_input != 30 or st.session_state.user_info['age'] is not None:
+                st.session_state.user_info['age'] = age_input
         with col2:
-            gender = st.selectbox("性别", ["男", "女", "不方便透露"],
-                                 index=["男", "女", "不方便透露"].index(st.session_state.user_info['gender']),
+            gender = st.selectbox("性别", ["不方便透露", "男", "女"],
+                                 index=["不方便透露", "男", "女"].index(st.session_state.user_info['gender']),
                                  key="user_gender")
             st.session_state.user_info['gender'] = gender
 
+    # 常见症状快速选择（仅在只有欢迎消息时显示）
+    if len(st.session_state.chat_history) == 1:
+        st.markdown("**常见症状快速选择：**")
+        common_issues = [
+            "疲劳乏力、精神不振",
+            "失眠多梦、睡眠质量差",
+            "消化不良、胃胀腹胀",
+            "头痛头晕",
+            "焦虑心烦、情绪低落",
+            "腰酸背痛、关节疼痛"
+        ]
+
+        cols = st.columns(3)
+        for idx, issue in enumerate(common_issues):
+            col_idx = idx % 3
+            with cols[col_idx]:
+                if st.button(issue, key=f"quick_{idx}", use_container_width=True):
+                    # 立即添加用户消息并显示
+                    st.session_state.chat_history.append({
+                        'role': 'user',
+                        'content': issue
+                    })
+                    st.session_state.chat_history.append({
+                        'role': 'assistant',
+                        'content': "正在分析中..."
+                    })
+                    st.rerun()
+
     # 输入框
-    col_input, col_send = st.columns([5, 1])
-    with col_input:
-        user_input = st.text_input(
-            "输入您的症状或问题...",
-            key="user_input",
-            label_visibility="collapsed",
-            placeholder="请详细描述您的症状...",
-            disabled=st.session_state.is_generating
-        )
-    with col_send:
-        send_button = st.button(
-            "发送 📤",
-            type="primary",
-            use_container_width=True,
-            disabled=st.session_state.is_generating
-        )
+    user_input = st.chat_input("请输入您的症状或问题...")
 
     # 处理发送
-    if send_button and user_input.strip():
-        handle_user_input(user_input.strip())
+    if user_input and user_input.strip():
+        # 立即添加用户消息
+        st.session_state.chat_history.append({
+            'role': 'user',
+            'content': user_input.strip()
+        })
+        st.session_state.chat_history.append({
+            'role': 'assistant',
+            'content': "正在分析中..."
+        })
+        st.rerun()
 
-# 显示常见症状快速选择
-def show_quick_symptoms():
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    common_issues = [
-        "疲劳乏力、精神不振",
-        "失眠多梦、睡眠质量差",
-        "消化不良、胃胀腹胀",
-        "头痛头晕",
-        "焦虑心烦、情绪低落",
-        "腰酸背痛、关节疼痛"
-    ]
-
-    cols = st.columns(3)
-    for idx, issue in enumerate(common_issues):
-        col_idx = idx % 3
-        with cols[col_idx]:
-            if st.button(issue, key=f"quick_{idx}", use_container_width=True,
-                        disabled=st.session_state.is_generating):
-                handle_user_input(issue)
-
-# 处理用户输入
-def handle_user_input(user_input):
-    # 添加用户消息
-    st.session_state.chat_history.append({
-        'role': 'user',
-        'content': user_input
-    })
-
-    # 标记正在生成
-    st.session_state.is_generating = True
-    st.session_state.current_response = ""
-
-    # 先显示"思考中"状态
-    st.rerun()
-
-    # 获取AI回复
+def get_ai_response_streaming():
+    """在聊天框内流式获取并显示AI回复"""
     try:
         analyzer = TCMAnalyzer()
 
-        # 构建对话上下文
+        # 构建对话上下文（排除"正在分析中..."）
         messages = []
-        for msg in st.session_state.chat_history[-6:]:
+        for msg in st.session_state.chat_history[:-1]:  # 排除最后的"正在分析中..."
             if msg['role'] in ['user', 'assistant']:
                 if not ('我是您的中医智能小助手' in msg['content']):
                     messages.append(msg)
 
-        # 流式获取回复
-        full_response = ""
-        response_placeholder = st.empty()
+        # 获取用户信息
+        age = st.session_state.user_info['age'] if st.session_state.user_info['age'] else 30
+        gender = st.session_state.user_info['gender']
 
+        # 在当前位置创建占位符进行流式显示
+        text_placeholder = st.empty()
+        full_response = ""
+
+        # 流式获取AI回复并实时显示
         for chunk in analyzer.chat_streaming(
-            messages=messages,
-            age=st.session_state.user_info['age'],
-            gender=st.session_state.user_info['gender']
+            messages=messages[-6:],  # 只保留最近6轮对话
+            age=age,
+            gender=gender
         ):
             full_response += chunk
-            st.session_state.current_response = full_response
-            # 每隔几个字符更新一次显示（模拟打字效果）
-            if len(full_response) % 5 == 0:
-                time.sleep(0.01)
+            text_placeholder.markdown(full_response + "▌")  # 添加光标效果
+            time.sleep(0.02)  # 打字效果延迟
 
-        # 添加完整回复到历史
-        st.session_state.chat_history.append({
-            'role': 'assistant',
-            'content': full_response
-        })
+        # 移除光标，显示最终结果
+        text_placeholder.markdown(full_response)
+
+        return full_response
 
     except Exception as e:
-        st.session_state.chat_history.append({
-            'role': 'assistant',
-            'content': f"抱歉，分析过程中出现错误：{str(e)}\n\n请检查网络连接或稍后重试。"
-        })
-
-    finally:
-        # 重置生成状态
-        st.session_state.is_generating = False
-        st.session_state.current_response = ""
-        st.rerun()
+        error_msg = f"抱歉，分析过程中出现错误：{str(e)}\n\n请检查网络连接或稍后重试。"
+        st.error(error_msg)
+        return error_msg
 
 # ==================== 确认退出页面 ====================
 def show_confirm_exit():
     st.markdown("<br><br><br>", unsafe_allow_html=True)
-
     st.warning("### ⚠️ 确认返回首页？")
     st.write("返回首页将清除当前的对话记录，确定要继续吗？")
-
     st.markdown("<br>", unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([1, 1, 1])
