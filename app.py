@@ -157,8 +157,8 @@ def show_chat_page():
         }
         st.session_state.chat_history.append(welcome_msg)
 
-    # 对话历史容器
-    chat_container = st.container(height=500)
+    # 对话历史容器 - 使用更小的高度以确保下方元素可见
+    chat_container = st.container(height=350)
 
     with chat_container:
         for idx, message in enumerate(st.session_state.chat_history):
