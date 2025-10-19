@@ -31,8 +31,6 @@ st.markdown("""
     /* 移动端优化 */
     html, body {
         overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior: contain;
     }
 
     .block-container {
@@ -63,11 +61,6 @@ st.markdown("""
         border-radius: 12px;
     }
 
-    /* 确保聊天容器可以滚动 */
-    [data-testid="stVerticalBlock"] {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
 </style>
 """, unsafe_allow_html=True)
 
