@@ -161,8 +161,16 @@ def show_chat_page():
 
     # 用户信息（折叠）- 放在快速选择之前避免UI重复
     with st.expander("📋 个人信息（可选）", expanded=False):
-        col1, col2 = st.columns(2)
-        with col1:
+        st.markdown("*提供个人信息可获得更精准的养生建议*")
+
+        # 年龄输入
+        provide_age = st.checkbox(
+            "提供年龄信息",
+            value=st.session_state.user_info['age'] is not None,
+            key="provide_age_checkbox"
+        )
+
+        if provide_age:
             age_input = st.number_input(
                 "年龄",
                 min_value=1,
@@ -170,14 +178,18 @@ def show_chat_page():
                 value=st.session_state.user_info['age'] if st.session_state.user_info['age'] else 30,
                 key="user_age"
             )
-            # 只有用户主动修改才更新
-            if age_input != 30 or st.session_state.user_info['age'] is not None:
-                st.session_state.user_info['age'] = age_input
-        with col2:
-            gender = st.selectbox("性别", ["不方便透露", "男", "女"],
-                                 index=["不方便透露", "男", "女"].index(st.session_state.user_info['gender']),
-                                 key="user_gender")
-            st.session_state.user_info['gender'] = gender
+            st.session_state.user_info['age'] = age_input
+        else:
+            st.session_state.user_info['age'] = None
+
+        # 性别选择
+        gender = st.selectbox(
+            "性别",
+            ["不方便透露", "男", "女"],
+            index=["不方便透露", "男", "女"].index(st.session_state.user_info['gender']),
+            key="user_gender"
+        )
+        st.session_state.user_info['gender'] = gender
 
     # 常见症状快速选择（仅在只有欢迎消息时显示）
     if len(st.session_state.chat_history) == 1:
