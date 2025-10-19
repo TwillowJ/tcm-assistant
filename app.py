@@ -31,6 +31,29 @@ st.markdown("""
     .block-container {
         padding-top: 1rem;
         padding-bottom: 0rem;
+        max-width: 800px;
+    }
+
+    /* 优化按钮样式 */
+    .stButton button {
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .stButton button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    /* 优化聊天消息样式 */
+    .stChatMessage {
+        border-radius: 12px;
+        margin-bottom: 8px;
+    }
+
+    /* 优化输入框样式 */
+    .stChatInput {
+        border-radius: 12px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -38,20 +61,33 @@ st.markdown("""
 # ==================== 欢迎页面 ====================
 def show_welcome_page():
     st.markdown("""
-    <div style="text-align: center; margin-top: 10vh;">
-        <h1 style="font-size: 42px; margin-bottom: 15px;">🌿 中医智能小助手</h1>
-        <p style="font-size: 18px; color: #666; margin-bottom: 40px;">
-            结合传统中医智慧与现代AI技术，为您提供个性化养生建议
+    <div style="text-align: center; margin-top: 8vh;">
+        <h1 style="font-size: 48px; margin-bottom: 20px;
+                   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                   -webkit-background-clip: text;
+                   -webkit-text-fill-color: transparent;
+                   font-weight: 700;">
+            🌿 中医智能小助手
+        </h1>
+        <p style="font-size: 18px; color: #666; margin-bottom: 50px; line-height: 1.6;">
+            结合传统中医智慧与现代AI技术<br>为您提供个性化养生建议
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-    # 功能特色 - 居中显示
+    # 功能特色 - 卡片式布局
     st.markdown("""
-    <div style="text-align: center; margin: 30px 0;">
-        <div style="display: inline-block; text-align: left;">
-            <p>🤖 <strong>AI智能分析</strong> &nbsp;&nbsp;&nbsp; 🎯 <strong>精准辨证</strong></p>
-            <p>💊 <strong>实用养生建议</strong> &nbsp;&nbsp;&nbsp; 🔒 <strong>隐私保护</strong></p>
+    <div style="text-align: center; margin: 40px auto; max-width: 600px;">
+        <div style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                    border-radius: 16px;
+                    padding: 30px;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.12);">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: center;">
+                <div><span style="font-size: 24px;">🤖</span><br><strong>AI智能分析</strong></div>
+                <div><span style="font-size: 24px;">🎯</span><br><strong>精准辨证</strong></div>
+                <div><span style="font-size: 24px;">💊</span><br><strong>养生建议</strong></div>
+                <div><span style="font-size: 24px;">🔒</span><br><strong>隐私保护</strong></div>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -60,16 +96,16 @@ def show_welcome_page():
     st.info("⚠️ **免责声明**：本产品仅为 AI 技术演示，内容仅供参考，不能替代专业医疗诊断。")
     st.markdown("<br>", unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1, 1, 1])
+    col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
-        if st.button("🩺 进入问诊", type="primary", use_container_width=True, key="enter_chat"):
+        if st.button("🩺 开始问诊", type="primary", use_container_width=True, key="enter_chat"):
             st.session_state.page = 'chat'
             st.session_state.show_welcome_message = True
             st.rerun()
 
     st.markdown("""
-    <div style="text-align: center; color: #999; font-size: 14px; margin-top: 40px;">
-        © 2025 中医智能小助手 v1.5 | Powered by AI
+    <div style="text-align: center; color: #999; font-size: 13px; margin-top: 60px;">
+        © 2025 中医智能小助手 v1.6 | Powered by Claude AI
     </div>
     """, unsafe_allow_html=True)
 
@@ -145,25 +181,27 @@ def show_chat_page():
 
     # 常见症状快速选择（仅在只有欢迎消息时显示）
     if len(st.session_state.chat_history) == 1:
-        st.markdown("**常见症状快速选择：**")
+        st.markdown("**💡 常见症状快速选择：**")
         common_issues = [
-            "疲劳乏力、精神不振",
-            "失眠多梦、睡眠质量差",
-            "消化不良、胃胀腹胀",
-            "头痛头晕",
-            "焦虑心烦、情绪低落",
-            "腰酸背痛、关节疼痛"
+            "😴 疲劳乏力、精神不振",
+            "🌙 失眠多梦、睡眠质量差",
+            "🍽️ 消化不良、胃胀腹胀",
+            "🤕 头痛头晕",
+            "😰 焦虑心烦、情绪低落",
+            "🦴 腰酸背痛、关节疼痛"
         ]
 
-        cols = st.columns(3)
+        cols = st.columns(2)  # 改为2列，更适合移动端
         for idx, issue in enumerate(common_issues):
-            col_idx = idx % 3
+            col_idx = idx % 2
             with cols[col_idx]:
                 if st.button(issue, key=f"quick_{idx}", use_container_width=True):
+                    # 移除emoji，只保留症状文字
+                    clean_issue = issue.split(' ', 1)[1] if ' ' in issue else issue
                     # 立即添加用户消息并显示
                     st.session_state.chat_history.append({
                         'role': 'user',
-                        'content': issue
+                        'content': clean_issue
                     })
                     st.session_state.chat_history.append({
                         'role': 'assistant',
