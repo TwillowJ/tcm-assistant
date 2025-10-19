@@ -28,10 +28,18 @@ st.markdown("""
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
+    /* 移动端优化 */
+    html, body {
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+
     .block-container {
         padding-top: 1rem;
-        padding-bottom: 0rem;
+        padding-bottom: 2rem;
         max-width: 800px;
+        min-height: 100vh;
     }
 
     /* 优化按钮样式 */
@@ -54,6 +62,23 @@ st.markdown("""
     /* 优化输入框样式 */
     .stChatInput {
         border-radius: 12px;
+        position: sticky;
+        bottom: 0;
+        background: white;
+        z-index: 100;
+    }
+
+    /* 确保聊天容器可以滚动 */
+    [data-testid="stVerticalBlock"] {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* 微信浏览器兼容性 */
+    @media screen and (max-width: 768px) {
+        .block-container {
+            padding-bottom: 80px;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -66,7 +91,8 @@ def show_welcome_page():
                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                    -webkit-background-clip: text;
                    -webkit-text-fill-color: transparent;
-                   font-weight: 700;">
+                   font-weight: 700;
+                   white-space: nowrap;">
             🌿 中医智能小助手
         </h1>
         <p style="font-size: 18px; color: #666; margin-bottom: 50px; line-height: 1.6;">
@@ -119,7 +145,10 @@ def show_chat_page():
                 st.session_state.page = 'confirm_exit'
                 st.rerun()
             else:
+                # 返回首页时清除状态
                 st.session_state.page = 'welcome'
+                st.session_state.chat_history = []
+                st.session_state.show_welcome_message = True
                 st.rerun()
     with col2:
         st.markdown("<h3 style='text-align: center; color: #667eea; margin: 0;'>🌿 中医智能小助手</h3>",
@@ -295,6 +324,7 @@ def show_confirm_exit():
         if st.button("✅ 确认返回", type="primary", use_container_width=True):
             st.session_state.page = 'welcome'
             st.session_state.chat_history = []
+            st.session_state.show_welcome_message = True
             st.rerun()
     with col3:
         if st.button("❌ 取消", use_container_width=True):
