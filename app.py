@@ -37,9 +37,8 @@ st.markdown("""
 
     .block-container {
         padding-top: 1rem;
-        padding-bottom: 2rem;
+        padding-bottom: 0rem;
         max-width: 800px;
-        min-height: 100vh;
     }
 
     /* 优化按钮样式 */
@@ -59,26 +58,15 @@ st.markdown("""
         margin-bottom: 8px;
     }
 
-    /* 优化输入框样式 */
+    /* 优化输入框样式 - 移除sticky定位 */
     .stChatInput {
         border-radius: 12px;
-        position: sticky;
-        bottom: 0;
-        background: white;
-        z-index: 100;
     }
 
     /* 确保聊天容器可以滚动 */
     [data-testid="stVerticalBlock"] {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-    }
-
-    /* 微信浏览器兼容性 */
-    @media screen and (max-width: 768px) {
-        .block-container {
-            padding-bottom: 80px;
-        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -91,8 +79,7 @@ def show_welcome_page():
                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                    -webkit-background-clip: text;
                    -webkit-text-fill-color: transparent;
-                   font-weight: 700;
-                   white-space: nowrap;">
+                   font-weight: 700;">
             🌿 中医智能小助手
         </h1>
         <p style="font-size: 18px; color: #666; margin-bottom: 50px; line-height: 1.6;">
