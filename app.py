@@ -255,8 +255,8 @@ def get_ai_response_streaming():
                 if not ('我是您的中医智能小助手' in msg['content']):
                     messages.append(msg)
 
-        # 获取用户信息
-        age = st.session_state.user_info['age'] if st.session_state.user_info['age'] else 30
+        # 获取用户信息 - 如果未提供则传递字符串"未提供"
+        age = st.session_state.user_info['age'] if st.session_state.user_info['age'] is not None else "未提供"
         gender = st.session_state.user_info['gender']
 
         # 在当前位置创建占位符进行流式显示

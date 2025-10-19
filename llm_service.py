@@ -195,24 +195,30 @@ class TCMAnalyzer:
         except Exception as e:
             raise Exception(f"调用LLM API时出错: {str(e)}")
 
-    def chat_streaming(self, messages, age=30, gender="不方便透露"):
+    def chat_streaming(self, messages, age="未提供", gender="不方便透露"):
         """
         多轮对话流式输出
 
         参数:
             messages: 对话历史 [{"role": "user/assistant", "content": "..."}]
-            age: 年龄
+            age: 年龄（可以是数字或"未提供"）
             gender: 性别
 
         返回:
             生成器，逐步返回AI回复
         """
         try:
+            # 格式化年龄信息
+            if age == "未提供":
+                age_info = "未提供（请勿在回复中假设或提及具体年龄）"
+            else:
+                age_info = f"{age}岁"
+
             # 构建系统提示词（针对多轮对话优化）
             system_prompt = f"""你是一位经验丰富的中医养生专家，正在与用户进行多轮对话咨询。
 
 用户信息：
-- 年龄：{age}岁
+- 年龄：{age_info}
 - 性别：{gender}
 
 你的职责：
