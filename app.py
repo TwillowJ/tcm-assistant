@@ -163,33 +163,39 @@ def show_chat_page():
     with st.expander("📋 个人信息（可选）", expanded=False):
         st.markdown("*提供个人信息可获得更精准的养生建议*")
 
-        # 年龄输入
-        provide_age = st.checkbox(
-            "提供年龄信息",
-            value=st.session_state.user_info['age'] is not None,
-            key="provide_age_checkbox"
-        )
+        col1, col2 = st.columns(2)
 
-        if provide_age:
-            age_input = st.number_input(
+        with col1:
+            # 年龄选择 - 使用selectbox避免默认值问题
+            age_options = ["未提供"] + list(range(1, 121))
+
+            if st.session_state.user_info['age'] is None:
+                default_age_index = 0  # "未提供"
+            else:
+                default_age_index = age_options.index(st.session_state.user_info['age'])
+
+            age_selection = st.selectbox(
                 "年龄",
-                min_value=1,
-                max_value=120,
-                value=st.session_state.user_info['age'] if st.session_state.user_info['age'] else 30,
+                options=age_options,
+                index=default_age_index,
                 key="user_age"
             )
-            st.session_state.user_info['age'] = age_input
-        else:
-            st.session_state.user_info['age'] = None
 
-        # 性别选择
-        gender = st.selectbox(
-            "性别",
-            ["不方便透露", "男", "女"],
-            index=["不方便透露", "男", "女"].index(st.session_state.user_info['gender']),
-            key="user_gender"
-        )
-        st.session_state.user_info['gender'] = gender
+            # 更新session state
+            if age_selection == "未提供":
+                st.session_state.user_info['age'] = None
+            else:
+                st.session_state.user_info['age'] = age_selection
+
+        with col2:
+            # 性别选择
+            gender = st.selectbox(
+                "性别",
+                ["不方便透露", "男", "女"],
+                index=["不方便透露", "男", "女"].index(st.session_state.user_info['gender']),
+                key="user_gender"
+            )
+            st.session_state.user_info['gender'] = gender
 
     # 常见症状快速选择（仅在只有欢迎消息时显示）
     if len(st.session_state.chat_history) == 1:
